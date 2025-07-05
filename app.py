@@ -1,22 +1,21 @@
 import streamlit as st
 import pandas as pd
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
+from PIL import Image
+import google.generativeai as genai
 
+# Load API Key
 load_dotenv()
-
-# Configure the API key
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+# Page Setup
 st.set_page_config(page_title="AI Question Generator by Shiv", layout="centered")
-
-# Navigation
 page = st.radio("Choose a Page", ["Question Generator", "Solution Generator"])
 
 # ------------------------ PAGE 1: Question Generator ------------------------ #
 if page == "Question Generator":
-    st.title("AI Question Maker By SHIV BHARDWAJ")
+    st.title("AI Question Maker By SHIVAM BHARDWAJ")
     st.subheader("Let me generate some brain storming questions for you")
 
     with st.sidebar:
@@ -46,45 +45,47 @@ Follow this instruction: {instruction}. Questions must be original (no plagiaris
                 st.subheader("Generated Questions")
                 st.write(response.text)
 
-# ------------------------ PAGE 2: Solution Generator ------------------------ #
+# ------------------------ PAGE 2: Updated Solution Generator ------------------------ #
 elif page == "Solution Generator":
-    st.title("Answer & Solution Evaluator")
-    st.subheader("Submit your MCQs and let AI generate explanations")
+    st.title("📚 Answer & Solution Evaluator")
+    st.subheader("Submit questions manually or via image (supports equations too)")
+
+    reload_btn = st.button("🔄 Reload Form")
+
+    if reload_btn:
+        st.session_state.clear()
+        st.experimental_rerun()
 
     with st.form("solution_form"):
-        num_qs = st.number_input("How many questions do you want to evaluate?", min_value=1, max_value=10, step=1)
-        questions = []
-        for i in range(int(num_qs)):
-            st.markdown(f"### Question {i+1}")
-            q_text = st.text_area(f"Enter Question {i+1}", key=f"q{i}")
-            options = st.text_area(f"Enter Options (comma separated)", key=f"opt{i}")
-            correct_ans = st.text_input(f"Enter Correct Answer", key=f"ans{i}")
-            questions.append({
-                "question": q_text,
-                "options": options,
-                "answer": correct_ans
-            })
+        q_text = st.text_area("✍️ Enter your Question (can include equations)")
+        uploaded_image = st.file_uploader("🖼️ Or Upload an Image of the Question", type=["jpg", "jpeg", "png"])
 
         submitted = st.form_submit_button("Generate Solutions")
 
     if submitted:
-        with st.spinner("Generating solutions..."):
-            prompt = "Generate detailed explanations for the following questions:\n\n"
-            for q in questions:
-                prompt += f"""Question: {q['question']}
-Options: {q['options']}
-Correct Answer: {q['answer']}
+        model = genai.GenerativeModel("gemini-2.0-flash")
 
-"""
+        with st.spinner("Processing your question and generating a solution..."):
 
-            prompt += "\nProvide thorough step-by-step explanations for each answer."
+            parts = []
+            prompt = """You are a subject matter expert. Solve the following question and provide a detailed step-by-step explanation. 
+If it's a math or equation-based question, include formulas and logic used.\n\n"""
 
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            response = model.generate_content(prompt)
+            if q_text:
+                parts.append(prompt + q_text)
 
-            st.subheader("Generated Solutions")
-            st.write(response.text)
+            if uploaded_image:
+                image = Image.open(uploaded_image)
+                parts = [prompt, image]  # use image+text input (multimodal)
+
+            try:
+                response = model.generate_content(parts)
+                st.subheader(" AI-Generated Solution")
+                st.write(response.text)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # Footer
 st.markdown("""---  
-Created by Shiv Bhardwaj {SRB}""")
+Created by **Shivam Bhardwaj** {SRB}""")
+
