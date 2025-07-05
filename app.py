@@ -37,7 +37,7 @@ if page == "Question Generator":
             with st.spinner("Generating questions..."):
                 prompt = f"""Give me {question} Multiple Choice Questions (MCQs) for the subject "{subject}", 
 of topic "{topic}" and sub-topics: {sub_topic}. Difficulty level: {question_difficulty}. 
-Ensure all options are relevant, and include detailed solution after questions. 
+Ensure all options are relevant, and include detailed solution after each and every question. 
 Follow this instruction: {instruction}. Questions must be original (no plagiarism)."""
 
                 model = genai.GenerativeModel("gemini-2.0-flash")
